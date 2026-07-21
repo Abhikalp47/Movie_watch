@@ -1,57 +1,69 @@
 import MovieCard from "../components/MovieCard";
-import { useState,useEffect } from "react";
-import {search,getpopularMovies} from "../services/api"
+import { useState, useEffect } from "react";
+import { search, getPopularMovies } from "../components/services/api"
 import "../css/Home.css"
 
-function Home(){
-    const [searchQuerry,setSearchQuerry]=useState("")
+function Home() {
+    const [searchQuerry, setSearchQuerry] = useState("")
 
-    const [movie,setMovies]=useState([]);  
-    const [error,setError]= useState(null)
-    const [loading,setLoading]= useState(true)
-    
+    const [movies, setMovies] = useState([]);
+    const [error, setError] = useState(null)
+
+    const [loading, setLoading] = useState(true)
+
     useEffect(() => {
-        const loadPopularMovies= async () => {
+        const loadPopularMovies = async () => {
             try {
-                const popularMovies=await getpopularMovies();
-                setMovies(popularMovies)
-            } catch (err){
-                console.log(err)
-                setError("Failed to load....")
+                const popularMovies = await getPopularMovies();
+                setMovies(popularMovies);
+            } catch (err) {
+                console.log(err);
+                setError("Failed to load....");
+            } finally {
+                setLoading(false);
             }
-            finally{
-                setLoading(false)
-            }
-        } 
+        };
+
         loadPopularMovies();
-    })
+    }, [])
 
-    const handleSearch = (e) => {
+    const handleSearch = async (e) => {
         e.preventDefault()
-        alert(searchQuerry)
-        setSearchQuerry("")
+        if (!searchQuerry.trim()) return;
+        setLoading(true);
+        setError(null);
+        try {
+            const searchResults = await search(searchQuerry);
+            setMovies(searchResults);
+            setSearchQuerry("");
+        } catch (err) {
+            console.log(err);
+            setError("Failed to search movies...");
+        } finally {
+            setLoading(false);
+        }
     }
-    return  (
-    <div className="home">
+    return (
+        <div className="home">
 
-        <form onSubmit={handleSearch} className="search-form">
-            <input type="text" placeholder="Search for movie...
+            <form onSubmit={handleSearch} className="search-form">
+                <input type="text" placeholder="Search for movie...
             " className="search-input"
-            value={searchQuerry}
-            onChange={(e) => setSearchQuerry(e.target.value)}
-            />
-            <button type="submit" className="search-button">Search</button>
-        </form>
+                    value={searchQuerry}
+                    onChange={(e) => setSearchQuerry(e.target.value)}
+                />
+                <button type="submit" className="search-button">Search</button>
+            </form>
 
-        <div className="movies-grid">
-            {movies.map((movie) => (
-                movie.title.toLowerCase().startsWith(searchQuerry) && (
-                <MovieCard movie={movie} key={movie.id}/>
-                 )
-                 ))}
-        
+            {loading && <div className="loading">Loading...</div>}
+            {error && <div className="error">{error}</div>}
+
+            <div className="movies-grid">
+                {movies.map((movie) => (
+                    <MovieCard movie={movie} key={movie.id} />
+                ))}
+            </div>
         </div>
-    </div>
     )
 }
 export default Home
